@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4 text-center">
+        <div class="col">
+            <h1 class="display-4">AI Assistant</h1>
+            <p class="lead">Get insights and interact with our AI to manage your plant watering system effectively.</p>
+        </div>
+    </div>
+
+    <!-- AI Insights Section -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">AI-Generated Insights</h5>
+                    <div id="insightsContainer" class="markdown-body ai-insights"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat System -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Chat with AI</h5>
+                    <div id="chatContainer" class="chat-container">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="input-group mt-3">
+                        <input type="text" id="userInput" class="form-control chat-input" placeholder="Ask the AI..."
+                            aria-label="User's message" onkeypress="handleKeyPress(event)">
+                        <button class="btn btn-primary" type="button" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Markdown rendering with Marked.js -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Render markdown content in the insights section
+        const insightsMarkdown = `{{ insights | safe }}`;
+        document.getElementById('insightsContainer').innerHTML = marked.parse(insightsMarkdown);
+    });
+
+    const chatContainer = document.getElementById('chatContainer');
+
+    function addMessage(message, sender = 'user') {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}`;
+        messageElement.innerHTML = marked.parse(message);
+        chatContainer.appendChild(messageElement);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const userInput = document.getElementById('userInput');
+        const message = userInput.value.trim();
+
+        if (message) {
+            addMessage(message, 'user');  // Add user message
+            userInput.value = '';
+
+            // Send message to backend
+            const response = await fetch('{{ url_for("chat") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await response.json();
+            addMessage(data.response, 'ai');  // Add AI response
+        }
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+</script>
+
+<style>
+    .chat-container {
+        max-height: 400px;
+        overflow-y: auto;
+        background-color: #2c2c2c;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+
+    .message {
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        border-radius: 20px;
+        word-wrap: break-word;
+        font-family: 'Roboto', sans-serif;
+        max-width: 70%;
+    }
+
+    .message.user {
+        background-color: #4c4c4c;
+        color: #ffffff;
+        text-align: right;
+        margin-left: auto;
+        border-bottom-right-radius: 0;
+    }
+
+    .message.ai {
+        background-color: #343a40;
+        color: #ffffff;
+        text-align: left;
+        margin-right: auto;
+        border-bottom-left-radius: 0;
+    }
+
+    .chat-input {
+        background-color: #3a3a3a;
+        color: #ffffff;
+        border: 1px solid #4a4a4a;
+        border-radius: 20px;
+        padding: 10px 15px;
+    }
+
+    .chat-input:focus {
+        background-color: #3a3a3a;
+        color: #ffffff;
+        border-color: #0097a7;
+        box-shadow: none;
+    }
+
+    .chat-input::placeholder {
+        color: #aaaaaa;
+    }
+
+    .btn-primary {
+        background-color: #00bcd4;
+        border-color: #00bcd4;
+        border-radius: 20px;
+    }
+
+    .btn-primary:hover {
+        background-color: #0097a7;
+        border-color: #0097a7;
+    }
+
+    /* Markdown Styling */
+    .markdown-body {
+        background-color: transparent;
+        color: #e0e0e0;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3 {
+        color: #ffffff;
+    }
+
+    .markdown-body p,
+    .markdown-body ul,
+    .markdown-body ol {
+        color: #d0d0d0;
+    }
+
+    .markdown-body a {
+        color: #00bcd4;
+    }
+
+    .ai-insights {
+        background-color: #1f1f1f;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        color: #f0f0f0;
+    }
+
+    .ai-insights h5 {
+        color: #e0e0e0;
+    }
+
+    .ai-insights p {
+        color: #d0d0d0;
+    }
+</style>
+
+{% endblock %}

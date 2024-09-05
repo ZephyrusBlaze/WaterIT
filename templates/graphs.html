@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-5 text-center">
+        <div class="col">
+            <h1 class="display-4">System Analytics</h1>
+            <p class="lead">Visualize your plant watering system's data in real-time.</p>
+        </div>
+    </div>
+
+    <!-- Moisture-Time Chart -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Soil Moisture Over Time</h5>
+                    <canvas id="moistureChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pump Usage-Time Chart -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Pump Usage Over Time</h5>
+                    <canvas id="pumpChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Temp-Humidity-Time Chart -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Temperature & Humidity Over Time</h5>
+                    <canvas id="tempHumidityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js and Date Adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script>
+    // Data passed from Flask to the template
+    const moistureTime = {{ moisture_time| tojson }};
+    const moistureLevel = {{ moisture_level| tojson }};
+    const pumpTime = {{ pump_time| tojson }};
+    const waterUsed = {{ water_used| tojson }};
+    const temperature = {{ temperature| tojson }};
+    const humidity = {{ humidity| tojson }};
+
+    // Moisture-Time Chart
+    const ctxMoisture = document.getElementById('moistureChart').getContext('2d');
+    const moistureChart = new Chart(ctxMoisture, {
+        type: 'line',
+        data: {
+            labels: moistureTime,
+            datasets: [{
+                label: 'Soil Moisture (%)',
+                data: moistureLevel,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour'
+                    },
+                    adapters: {
+                        date: {
+                            // Date format
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Pump Usage-Time Chart
+    const ctxPump = document.getElementById('pumpChart').getContext('2d');
+    const pumpChart = new Chart(ctxPump, {
+        type: 'bar',
+        data: {
+            labels: pumpTime,
+            datasets: [{
+                label: 'Water Used (liters)',
+                data: waterUsed,
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour'
+                    },
+                    adapters: {
+                        date: {
+                            // Date format
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Temp-Humidity-Time Chart
+    const ctxTempHumidity = document.getElementById('tempHumidityChart').getContext('2d');
+    const tempHumidityChart = new Chart(ctxTempHumidity, {
+        type: 'line',
+        data: {
+            labels: pumpTime,
+            datasets: [{
+                label: 'Temperature (°C)',
+                data: temperature,
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                fill: true,
+                tension: 0.1
+            }, {
+                label: 'Humidity (%)',
+                data: humidity,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour'
+                    },
+                    adapters: {
+                        date: {
+                            // Date format
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

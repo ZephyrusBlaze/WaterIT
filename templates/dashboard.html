@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4">
+        <div class="col text-center">
+            <h1 class="display-4 text-light">Dashboard</h1>
+            <p class="lead text-light">Monitor and manage your plant watering system with ease.</p>
+        </div>
+    </div>
+    <div class="row">
+        <!-- Soil Moisture Card -->
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm border-0 bg-dark text-light">
+                <div class="card-body text-center">
+                    <i class="bi bi-droplet-half text-primary display-4 mb-3"></i>
+                    <h5 class="card-title">Soil Moisture</h5>
+                    <p class="card-text">Current soil moisture level</p>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div id="moisture-progress" class="progress-bar bg-info" role="progressbar"
+                            style="width: {{ data.soil_moisture_level }}%;"
+                            aria-valuenow="{{ data.soil_moisture_level }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small class="text-light" id="moisture-level">{{ data.soil_moisture_level }}%</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Usage Card -->
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm border-0 bg-dark text-light">
+                <div class="card-body text-center">
+                    <i class="bi bi-water text-info display-4 mb-3"></i>
+                    <h5 class="card-title">Water Usage</h5>
+                    <p class="card-text">Total water consumption</p>
+                    <h3 class="mb-0" id="water-usage">{{ data.water_usage }} L</h3>
+                    <small class="text-light" id="last-watering-event">Last watering: {{ data.last_watering_event }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pump Status Card -->
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm border-0 bg-dark text-light">
+                <div class="card-body text-center">
+                    <i id="pump-icon"
+                        class="bi bi-power text-{{ 'success' if data.ard_status == 'Connected' else 'danger' }} display-4 mb-3"></i>
+                    <h5 class="card-title">Arduino Status</h5>
+                    <p class="card-text">Current status of the arduino</p>
+                    <div id="pump-status-alert" class="alert alert-{{ 'success' if data.ard_status == 'Connected' else 'danger' }} d-flex align-items-center justify-content-center"
+                        role="alert">
+                        <span id="pump-status-text">Arduino is {{ data.ard_status }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environmental Conditions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4 shadow-sm border-0 bg-dark text-light">
+                <div class="card-body">
+                    <h5 class="card-title">Environmental Conditions</h5>
+                    <p class="card-text">Current temperature and humidity levels in {{ data.CITY }}</p>
+                    <div class="d-flex justify-content-around">
+                        <div class="text-center">
+                            <i class="bi bi-thermometer-half text-danger display-6 mb-2"></i>
+                            <p>Temperature: {{ data.temperature }}°C</p>
+                        </div>
+                        <div class="text-center">
+                            <i class="bi bi-moisture text-info display-6 mb-2"></i>
+                            <p>Humidity: {{ data.humidity }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
