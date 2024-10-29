@@ -35,14 +35,14 @@ void loop() {
     Serial.println(moistureLevel);
   }
 
-  if (moistureLevel < 150 && !pumpOn) {
+  if (moistureLevel < 400 && !pumpOn) {
     digitalWrite(pumpPin, LOW);  // Turn pump on
     pumpStartTime = millis();
     pumpOn = true;
     Serial.println("Pump turned ON");
   }
 
-  if (moistureLevel > 150 && pumpOn) {
+  if (moistureLevel > 400 && pumpOn) {
     digitalWrite(pumpPin, HIGH); // Turn pump off
     pumpEndTime = millis();
     pumpOn = false;
