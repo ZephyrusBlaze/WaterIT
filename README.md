@@ -42,7 +42,7 @@ Global agriculture consumes over **70%** of freshwater, and inefficient irrigati
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/TheStrange-007/WaterIT.git
+   git clone https://github.com/ZephyrusBlaze/WaterIT.git
    cd waterit
    ```
 
