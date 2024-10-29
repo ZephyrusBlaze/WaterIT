@@ -1,4 +1,5 @@
 import os
+import base64
 
 from flask import Flask, render_template, request, jsonify
 import random
@@ -9,6 +10,7 @@ import sqlite3
 import threading
 import csv
 import io
+
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
@@ -33,6 +35,10 @@ BAUD_RATE = 9600
 
 # Global variable to track Arduino connection status
 ard_status = "Connected"
+
+# Global variable to store the plant name
+identified_plant_name = None
+PLANTID_API_KEY = os.getenv("PLANTID_API_KEY")
 
 # Gemini API configuration
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -235,19 +241,25 @@ def generate_csv_data():
 
 def get_ai_insights(csv_data):
     prompt = f"""
-    Analyze the following CSV data for a plant watering system:
+You are an AI assistant for a plant watering system. The task is to analyze the following CSV data:
 
-    {csv_data}
+{csv_data}
 
-    Provide insights on the following aspects:
-    1. Overall moisture level trends
-    2. Watering frequency and amount
-    3. Temperature and humidity effects on watering
-    4. Any unusual patterns or anomalies
-    5. Recommendations for improving plant care based on the data
+**Instructions:**
 
-    Format your response using Markdown for better readability.
-    """
+- **If CSV data is provided**, please address the following aspects:
+  1. Overall moisture level trends
+  2. Watering frequency and amount
+  3. Temperature and humidity effects on watering
+  4. Any unusual patterns or anomalies
+  5. Recommendations for improving plant care based on the data
+
+- **If CSV data is empty or lacks sufficient information**, do the following instead:
+  - Generate general information and tips about plant care, excluding watering tips and related topics.
+  - Use Markdown to format your response for better readability.
+
+**Important Note:** Ensure that you follow the correct instruction based on the availability and quality of the CSV data.
+"""
 
     response = model.generate_content(prompt)
     return response.text
@@ -297,7 +309,7 @@ def serial_communication():
                 # Process moisture level data
                 if "Moisture Level:" in line:
                     moisture_level = int(line.split(":")[1].strip())
-                    moisture_percent = (moisture_level / 500.0) * 100
+                    moisture_percent = (moisture_level / 800.0) * 100
                     save_moisture_data(moisture_percent)
 
                 # Process water usage data
@@ -306,7 +318,11 @@ def serial_communication():
                     save_pump_data(water_used)
 
     except serial.SerialException as e:
-        if "ClearCommError" in str(e) or "FileNotFoundError" in str(e) or "No such file or directory" in str(e):
+        if (
+            "ClearCommError" in str(e)
+            or "FileNotFoundError" in str(e)
+            or "No such file or directory" in str(e)
+        ):
             ard_status = "Disconnected"
 
         print("Arduino disconnected:", e)
@@ -358,6 +374,11 @@ def ai():
     return render_template("ai.html", insights=insights)
 
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
     user_message = request.json["message"]
@@ -372,11 +393,19 @@ def chat():
     )
 
     if plant_related == "yes":
-        context = """
-        You are an AI assistant for a plant watering system. Your role is to provide information and answer questions 
-        about plants, plant care, watering systems, and related topics. Use the data from the plant watering system 
-        if relevant to the question.
-        """
+        context = f"""
+You are an AI assistant for a plant watering system. Your role is to provide information and answer questions 
+about plants, plant care, watering systems, and related topics. Use the data from the plant watering system 
+if relevant to the question. 
+
+**Important Instructions:**
+
+- **Always include the plant name**: {identified_plant_name} in your responses to provide more accurate and tailored advice.
+- **Exception**: If the plant name is "None", do not mention or include the plant name in your response.
+
+Ensure that you follow these instructions carefully to provide the most relevant information.
+"""
+
         prompt = f"{context}\n\nHuman: {user_message}\nAI:"
         response = model.generate_content(prompt)
         return jsonify({"response": response.text})
@@ -388,8 +417,57 @@ def chat():
         )
 
 
+@app.route("/identify", methods=["POST"])
+def identify():
+    global identified_plant_name  # Declare the global variable
+
+    # Check if plant name is provided
+    plant_name = request.form.get("plant_name")
+    if plant_name:
+        identified_plant_name = plant_name
+        return jsonify({"plant_name": plant_name})
+
+    # Otherwise, handle image upload
+    if "image" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    image = request.files["image"]
+    image_data = base64.b64encode(image.read()).decode("utf-8")
+
+    response = requests.post(
+        "https://plant.id/api/v3/identification",
+        headers={"Api-Key": PLANTID_API_KEY, "Content-Type": "application/json"},
+        json={
+            "images": ["data:image/jpg;base64," + image_data],
+            "latitude": 26.449,
+            "longitude": 80.331,
+        },
+    )
+
+    if response.status_code != 201:
+        return (
+            jsonify({"error": f"Error contacting Plant.ID API {response.text}"}),
+            response.status_code,
+        )
+
+    result = response.json()
+    try:
+        if (
+            result.get("result")
+            and result["result"].get("classification")
+            and result["result"]["classification"].get("suggestions")
+        ):
+            plant_name = result["result"]["classification"]["suggestions"][0]["name"]
+            identified_plant_name = plant_name  # Store in global variable
+            return jsonify({"plant_name": plant_name})
+        else:
+            return jsonify({"error": "Plant could not be identified"}), 400
+    except KeyError as e:
+        return jsonify({"error": f"Error processing API response: {str(e)}"}), 500
+
+
 if __name__ == "__main__":
     # Start the serial communication thread
     serial_thread = threading.Thread(target=serial_communication)
     serial_thread.start()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
