@@ -5,7 +5,38 @@
     <div class="row mb-4 text-center">
         <div class="col">
             <h1 class="display-4">AI Assistant</h1>
-            <p class="lead">Get insights and interact with our AI to manage your plant watering system effectively.</p>
+            <p class="lead">Get insights, identify plants, and interact with our AI to manage your plant watering system
+                effectively.</p>
+        </div>
+    </div>
+
+    <!-- Plant Identification Section -->
+    <div class="row mb-5 justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h5 class="card-title"><i data-lucide="leaf" class="me-2"></i>Identify Your Plant</h5>
+                    <form id="identifyForm" enctype="multipart/form-data" onsubmit="return false;">
+                        <div class="input-group mb-3">
+                            <input type="text" id="plantName" class="form-control chat-input"
+                                placeholder="Enter plant name" aria-label="Plant name"
+                                onkeydown="handleKeyPressIdentify(event)">
+                            <button class="btn btn-primary ms-2" type="button" onclick="identifyPlant()"><i
+                                    data-lucide="upload" class="me-1"></i>Upload</button>
+                        </div>
+                        <div class="mb-3">
+                            <label class="btn btn-upload">
+                                <i data-lucide="image" class="me-2"></i> Select Image
+                                <input type="file" id="plantImage" aria-label="Upload image"
+                                    onchange="previewImageAndIdentify()" hidden>
+                            </label>
+                        </div>
+                        <div id="imagePreview" class="text-center">
+                            <!-- Image preview will be displayed here -->
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -14,7 +45,7 @@
         <div class="col-md-12">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
-                    <h5 class="card-title">AI-Generated Insights</h5>
+                    <h5 class="card-title"><i data-lucide="lightbulb" class="me-2"></i>AI-Generated Insights</h5>
                     <div id="insightsContainer" class="markdown-body ai-insights"></div>
                 </div>
             </div>
@@ -26,14 +57,15 @@
         <div class="col-md-12">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
-                    <h5 class="card-title">Chat with AI</h5>
+                    <h5 class="card-title"><i data-lucide="message-circle" class="me-2"></i>Chat with AI</h5>
                     <div id="chatContainer" class="chat-container">
                         <!-- Chat messages will appear here -->
                     </div>
                     <div class="input-group mt-3">
                         <input type="text" id="userInput" class="form-control chat-input" placeholder="Ask the AI..."
-                            aria-label="User's message" onkeypress="handleKeyPress(event)">
-                        <button class="btn btn-primary" type="button" onclick="sendMessage()">Send</button>
+                            aria-label="User's message" onkeypress="handleKeyPressChat(event)">
+                        <button class="btn btn-primary" type="button" onclick="sendMessage()"><i data-lucide="send"
+                                class="me-1"></i>Send</button>
                     </div>
                 </div>
             </div>
@@ -81,9 +113,71 @@
         }
     }
 
-    function handleKeyPress(event) {
+    function handleKeyPressIdentify(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            identifyPlant();
+        }
+    }
+
+    function handleKeyPressChat(event) {
         if (event.key === 'Enter') {
             sendMessage();
+        }
+    }
+
+    async function identifyPlant() {
+        const plantName = document.getElementById('plantName').value.trim();
+        const imageInput = document.getElementById('plantImage').files[0];
+
+        if (plantName) {
+            // Submit plant name
+            const response = await fetch('{{ url_for("identify") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ 'plant_name': plantName })
+            });
+
+            const data = await response.json();
+
+            if (data.plant_name) {
+                document.getElementById('plantName').value = data.plant_name;  // Display plant name in the input field
+            } else {
+                alert("Error identifying plant: " + (data.error || "Unknown error."));
+            }
+        } else if (imageInput) {
+            // Submit image
+            const formData = new FormData();
+            formData.append('image', imageInput);
+
+            const response = await fetch('{{ url_for("identify") }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.plant_name) {
+                document.getElementById('plantName').value = data.plant_name;  // Display plant name in the input field
+            } else {
+                alert("Error identifying plant: " + (data.error || "Unknown error."));
+            }
+        } else {
+            alert("Please enter a plant name or upload an image.");
+        }
+    }
+
+    function previewImageAndIdentify() {
+        const fileInput = document.getElementById('plantImage');
+        const imagePreview = document.getElementById('imagePreview');
+
+        if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.innerHTML = '<img src="' + e.target.result + '" alt="Uploaded Image">';
+                identifyPlant();  // Automatically identify plant after image upload
+            };
+            reader.readAsDataURL(fileInput.files[0]);
         }
     }
 </script>
@@ -153,7 +247,6 @@
         border-color: #0097a7;
     }
 
-    /* Markdown Styling */
     .markdown-body {
         background-color: transparent;
         color: #e0e0e0;
@@ -189,6 +282,54 @@
 
     .ai-insights p {
         color: #d0d0d0;
+    }
+
+    .btn-upload {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #00bcd4;
+        border-color: #00bcd4;
+        border-radius: 20px;
+        color: #ffffff;
+        cursor: pointer;
+        padding: 10px 15px;
+        font-size: 16px;
+        text-align: center;
+        width: 100%;
+    }
+
+    .btn-upload i {
+        margin-right: 8px;
+    }
+
+    .btn-upload:hover {
+        background-color: #0097a7;
+        border-color: #0097a7;
+    }
+
+    #imagePreview img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        margin-top: 10px;
+    }
+
+    [data-lucide] {
+        width: 20px;
+        height: 20px;
+        vertical-align: middle;
+    }
+
+    h1 [data-lucide],
+    h5 [data-lucide] {
+        width: 24px;
+        height: 24px;
+    }
+
+    .btn [data-lucide] {
+        width: 16px;
+        height: 16px;
     }
 </style>
 

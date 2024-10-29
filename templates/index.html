@@ -13,7 +13,9 @@
         <div class="card mb-4 shadow-sm">
             <img src="{{ url_for('static', filename='images/dashboard.png') }}" class="card-img-top" alt="Dashboard">
             <div class="card-body">
-                <h5 class="card-title">Dashboard</h5>
+                <h5 class="card-title">
+                    <span data-lucide="home" style="color: #007bff;"></span> Dashboard
+                </h5>
                 <p class="card-text">Get an overview of your plant watering system.</p>
                 <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-block">Go to Dashboard</a>
             </div>
@@ -23,7 +25,9 @@
         <div class="card mb-4 shadow-sm">
             <img src="{{ url_for('static', filename='images/graphs.png') }}" class="card-img-top" alt="Graphs">
             <div class="card-body">
-                <h5 class="card-title">Graphs</h5>
+                <h5 class="card-title">
+                    <span data-lucide="bar-chart-2" style="color: #28a745;"></span> Graphs
+                </h5>
                 <p class="card-text">Visualize your system's data with interactive graphs.</p>
                 <a href="{{ url_for('graphs') }}" class="btn btn-primary btn-block">View Graphs</a>
             </div>
@@ -33,7 +37,9 @@
         <div class="card mb-4 shadow-sm">
             <img src="{{ url_for('static', filename='images/ai.png') }}" class="card-img-top" alt="AI">
             <div class="card-body">
-                <h5 class="card-title">AI</h5>
+                <h5 class="card-title">
+                    <span data-lucide="cpu" style="color: rgba(13, 202, 240, 1);"></span> AI
+                </h5>
                 <p class="card-text">Get intelligent insights and recommendations for your plants.</p>
                 <a href="{{ url_for('ai') }}" class="btn btn-primary btn-block">Explore AI Features</a>
             </div>
